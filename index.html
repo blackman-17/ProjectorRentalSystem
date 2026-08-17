@@ -71,7 +71,7 @@
 
       <!-- Duration Summary Alert -->
       <div id="durationDisplay" class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 p-2.5 rounded-lg text-center">
-        Calculating duration...
+        Loading live slot availability...
       </div>
 
       <!-- Add-ons -->
@@ -166,7 +166,6 @@
     const netflixCheck = document.getElementById('netflixAddon');
     const hdmiCheck = document.getElementById('hdmiAddon');
 
-    // Single unified timeline from 6:00 PM (18:00) to 6:00 AM (06:00 next day)
     const SLOTS = [
       { label: "06:00 PM (Same Night)", offsetMins: 0, dayOffset: 0, h: 18, m: 0 },
       { label: "06:30 PM (Same Night)", offsetMins: 30, dayOffset: 0, h: 18, m: 30 },
@@ -185,21 +184,19 @@
       { label: "01:00 AM (Next Day)", offsetMins: 420, dayOffset: 1, h: 1, m: 0 },
       { label: "01:30 AM (Next Day)", offsetMins: 450, dayOffset: 1, h: 1, m: 30 },
       { label: "02:00 AM (Next Day)", offsetMins: 480, dayOffset: 1, h: 2, m: 0 },
-      { label: "02:30 AM (Next Day)", offsetMins: 510, dayOffset: 1, h: 2, m: 30 }, // Max pickup
+      { label: "02:30 AM (Next Day)", offsetMins: 510, dayOffset: 1, h: 2, m: 30 },
       { label: "03:00 AM (Next Day)", offsetMins: 540, dayOffset: 1, h: 3, m: 0 },
       { label: "03:30 AM (Next Day)", offsetMins: 570, dayOffset: 1, h: 3, m: 30 },
       { label: "04:00 AM (Next Day)", offsetMins: 600, dayOffset: 1, h: 4, m: 0 },
       { label: "04:30 AM (Next Day)", offsetMins: 630, dayOffset: 1, h: 4, m: 30 },
       { label: "05:00 AM (Next Day)", offsetMins: 660, dayOffset: 1, h: 5, m: 0 },
       { label: "05:30 AM (Next Day)", offsetMins: 690, dayOffset: 1, h: 5, m: 30 },
-      { label: "06:00 AM (Next Day)", offsetMins: 720, dayOffset: 1, h: 6, m: 0 }  // Max return
+      { label: "06:00 AM (Next Day)", offsetMins: 720, dayOffset: 1, h: 6, m: 0 }
     ];
 
-    // Set default date to today
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    rentalDateInput.min = todayStr;
-    rentalDateInput.value = todayStr;
+    rentalDateInput.min = today.toISOString().split('T')[0];
+    rentalDateInput.value = today.toISOString().split('T')[0];
 
     function getEpoch(slotIndex) {
       if (!rentalDateInput.value) return 0;
@@ -218,24 +215,26 @@
       return false;
     }
 
-    async function loadBookings() {
-      try {
-        const res = await fetch(SCRIPT_URL);
-        existingBookings = await res.json();
-      } catch (err) {
-        existingBookings = [];
-      }
+    window.handleBookingsResponse = function(data) {
+      existingBookings = data || [];
       populatePickupTimes();
+    };
+
+    function loadBookingsJSONP() {
+      const oldScript = document.getElementById('jsonp-script');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'jsonp-script';
+      script.src = `${SCRIPT_URL}?callback=handleBookingsResponse&t=${new Date().getTime()}`;
+      document.body.appendChild(script);
     }
 
     function populatePickupTimes() {
-      const currentPickup = pickupTimeSelect.value;
       pickupTimeSelect.innerHTML = "";
 
-      // Pickups allowed up to 2:30 AM (offsetMins <= 510)
       SLOTS.filter(s => s.offsetMins <= 510).forEach((slot, idx) => {
         const startMs = getEpoch(idx);
-        // Minimum booking is 30 mins: check if start slot is blocked
         const isBlocked = isTimeOverlapping(startMs, startMs + 30 * 60 * 1000);
 
         const opt = document.createElement('option');
@@ -245,7 +244,6 @@
         pickupTimeSelect.appendChild(opt);
       });
 
-      // Select first available pickup slot
       const firstEnabled = Array.from(pickupTimeSelect.options).find(o => !o.disabled);
       if (firstEnabled) {
         pickupTimeSelect.value = firstEnabled.value;
@@ -259,7 +257,6 @@
       const pickupStartMs = getEpoch(pickupIdx);
       returnTimeSelect.innerHTML = "";
 
-      // Return slots must be strictly after pickup
       for (let i = pickupIdx + 1; i < SLOTS.length; i++) {
         const returnEndMs = getEpoch(i);
         const hasOverlap = isTimeOverlapping(pickupStartMs, returnEndMs);
@@ -271,7 +268,6 @@
         returnTimeSelect.appendChild(opt);
       }
 
-      // Default to 3 hours later (6 slots = 180 mins) if available
       const defaultReturn = Math.min(pickupIdx + 6, SLOTS.length - 1);
       const targetOpt = Array.from(returnTimeSelect.options).find(o => parseInt(o.value) === defaultReturn && !o.disabled);
       
@@ -290,7 +286,7 @@
       const returnIdx = parseInt(returnTimeSelect.value);
 
       if (isNaN(pickupIdx) || isNaN(returnIdx)) {
-        durationDisplay.innerText = "❌ No valid slot available for this time range.";
+        durationDisplay.innerText = "❌ All slots booked for this time. Pick another date/time.";
         durationDisplay.className = "text-xs font-bold text-red-700 bg-red-100 border border-red-200 p-2.5 rounded-lg text-center";
         submitBtn.disabled = true;
         submitBtn.className = "w-full bg-gray-400 text-white py-3 rounded-xl font-medium cursor-not-allowed";
@@ -300,7 +296,6 @@
       const startMs = getEpoch(pickupIdx);
       const endMs = getEpoch(returnIdx);
 
-      // Check collision
       if (isTimeOverlapping(startMs, endMs)) {
         durationDisplay.innerText = "❌ Selected range overlaps an existing booking + 10m buffer!";
         durationDisplay.className = "text-xs font-bold text-red-700 bg-red-100 border border-red-200 p-2.5 rounded-lg text-center";
@@ -350,7 +345,6 @@
 
       const pickupSlot = SLOTS[pickupIdx];
       const returnSlot = SLOTS[returnIdx];
-
       const pDate = new Date(startMs);
       const rDate = new Date(endMs);
 
@@ -365,7 +359,7 @@
       };
     }
 
-    loadBookings();
+    loadBookingsJSONP();
 
     rentalDateInput.addEventListener('change', () => {
       populatePickupTimes();
@@ -381,7 +375,7 @@
       const calc = calculate();
       if (!calc) return;
 
-      submitBtn.innerText = "Submitting...";
+      submitBtn.innerText = "Submitting Booking...";
       submitBtn.disabled = true;
 
       const addons = [];
@@ -413,14 +407,14 @@
         const resText = await response.text();
 
         if (resText.includes("COLLISION")) {
-          alert("⚠️ Booking Collision: Someone just booked this time or the 10-min buffer overlaps! Reloading...");
-          await loadBookings();
+          alert("⚠️ Booking Collision: This slot or its 10-min cleaning buffer was just taken! Refreshing...");
+          loadBookingsJSONP();
         } else {
           alert(`🎬 Booking Confirmed for ${document.getElementById('name').value}!\n\nPickup: ${calc.pickupFullStr}\nReturn: ${calc.returnFullStr}\nTotal: ₹${calc.grandTotal}`);
           location.reload();
         }
       } catch (err) {
-        alert("Booking request submitted! Check your Google Sheet.");
+        alert("Booking submitted! Check your Google Sheet.");
         location.reload();
       }
     });
