@@ -11,7 +11,7 @@
   <div class="max-w-lg w-full bg-white rounded-2xl p-6 shadow-md border border-slate-200">
     <div class="mb-5">
       <h1 class="text-2xl font-bold text-slate-900">📽️ Rent Cinema Projector</h1>
-      <p class="text-xs text-slate-500 mt-1">₹50 flat for up to 3 hrs • +₹10/hr after • No security deposit</p>
+      <p class="text-xs text-slate-500 mt-1">Pickup (6:00 PM – 2:30 AM) • Return by 6:00 AM Max</p>
     </div>
 
     <form id="rentalForm" class="space-y-4">
@@ -49,15 +49,33 @@
         </select>
       </div>
 
-      <!-- Custom Pickup & Return Timing -->
+      <!-- Pickup Date & Time -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label class="text-xs font-semibold uppercase text-slate-600">Pickup Date & Time</label>
-          <input type="datetime-local" id="pickupDateTime" required class="w-full border border-slate-300 rounded-lg p-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <label class="text-xs font-semibold uppercase text-slate-600">Rental Date</label>
+          <input type="date" id="pickupDate" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
         </div>
         <div>
-          <label class="text-xs font-semibold uppercase text-slate-600">Return Date & Time</label>
-          <input type="datetime-local" id="returnDateTime" required class="w-full border border-slate-300 rounded-lg p-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <label class="text-xs font-semibold uppercase text-slate-600">Pickup Time (Max 2:30 AM)</label>
+          <select id="pickupTime" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <!-- Populated from 6:00 PM to 02:30 AM strictly -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Return Date & Return Time (Strictly max 6:00 AM next morning) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Return Date</label>
+          <select id="returnDate" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <!-- Populated with Date X or Date X+1 -->
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Return Time (Max 6:00 AM)</label>
+          <select id="returnTime" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <!-- Dynamically populated up to 6:00 AM -->
+          </select>
         </div>
       </div>
 
@@ -148,55 +166,177 @@
     const NETFLIX_PRICE = 10;
     const HDMI_PRICE = 10;
 
-    // REPLACE THIS STRING WITH YOUR DEPLOYED GOOGLE APPS SCRIPT URL:
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaOOtPhPhdHd5Fx70m0Y4pF-K6ue6ZLSSJtRpoEeTGQXsLus7X05j2LtSTTXs1YzGHFQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEH6ig6v1SYPtdt3KD4oGN-vnIx0ts68V8ZwgfIX2VN1CB_9UMXoNX-bjJAvnFALy6/exec";
 
-    const pickupInput = document.getElementById('pickupDateTime');
-    const returnInput = document.getElementById('returnDateTime');
+    const pickupDateInput = document.getElementById('pickupDate');
+    const pickupTimeSelect = document.getElementById('pickupTime');
+    const returnDateSelect = document.getElementById('returnDate');
+    const returnTimeSelect = document.getElementById('returnTime');
+
     const durationDisplay = document.getElementById('durationDisplay');
     const speakerCheck = document.getElementById('speakerAddon');
     const netflixCheck = document.getElementById('netflixAddon');
     const hdmiCheck = document.getElementById('hdmiAddon');
 
-    const now = new Date();
-    now.setMinutes(0, 0, 0);
-    const inThreeHours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    // All slots extending to 6:00 AM next morning (720 minutes total from 6 PM)
+    const ALL_SLOTS = [
+      { label: "06:00 PM", offsetMinutes: 0, dayOffset: 0 },
+      { label: "06:30 PM", offsetMinutes: 30, dayOffset: 0 },
+      { label: "07:00 PM", offsetMinutes: 60, dayOffset: 0 },
+      { label: "07:30 PM", offsetMinutes: 90, dayOffset: 0 },
+      { label: "08:00 PM", offsetMinutes: 120, dayOffset: 0 },
+      { label: "08:30 PM", offsetMinutes: 150, dayOffset: 0 },
+      { label: "09:00 PM", offsetMinutes: 180, dayOffset: 0 },
+      { label: "09:30 PM", offsetMinutes: 210, dayOffset: 0 },
+      { label: "10:00 PM", offsetMinutes: 240, dayOffset: 0 },
+      { label: "10:30 PM", offsetMinutes: 270, dayOffset: 0 },
+      { label: "11:00 PM", offsetMinutes: 300, dayOffset: 0 },
+      { label: "11:30 PM", offsetMinutes: 330, dayOffset: 0 },
+      { label: "12:00 AM (Midnight)", offsetMinutes: 360, dayOffset: 1 },
+      { label: "12:30 AM (Next Day)", offsetMinutes: 390, dayOffset: 1 },
+      { label: "01:00 AM (Next Day)", offsetMinutes: 420, dayOffset: 1 },
+      { label: "01:30 AM (Next Day)", offsetMinutes: 450, dayOffset: 1 },
+      { label: "02:00 AM (Next Day)", offsetMinutes: 480, dayOffset: 1 },
+      { label: "02:30 AM (Next Day)", offsetMinutes: 510, dayOffset: 1 }, // Max pickup slot
+      { label: "03:00 AM (Next Day)", offsetMinutes: 540, dayOffset: 1 },
+      { label: "03:30 AM (Next Day)", offsetMinutes: 570, dayOffset: 1 },
+      { label: "04:00 AM (Next Day)", offsetMinutes: 600, dayOffset: 1 },
+      { label: "04:30 AM (Next Day)", offsetMinutes: 630, dayOffset: 1 },
+      { label: "05:00 AM (Next Day)", offsetMinutes: 660, dayOffset: 1 },
+      { label: "05:30 AM (Next Day)", offsetMinutes: 690, dayOffset: 1 },
+      { label: "06:00 AM (Next Day)", offsetMinutes: 720, dayOffset: 1 }  // Max return slot
+    ];
 
-    function formatForInput(date) {
-      const pad = (n) => String(n).padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    // Set today as min date
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    pickupDateInput.min = todayStr;
+    pickupDateInput.value = todayStr;
+
+    // Pickup time allowed ONLY up to 02:30 AM (offsetMinutes <= 510)
+    function populatePickupTimes() {
+      pickupTimeSelect.innerHTML = "";
+      ALL_SLOTS.filter(slot => slot.offsetMinutes <= 510).forEach((slot, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.innerText = `${slot.label} ${slot.dayOffset === 1 ? '(Early Morning)' : ''}`;
+        pickupTimeSelect.appendChild(opt);
+      });
     }
 
-    pickupInput.value = formatForInput(now);
-    returnInput.value = formatForInput(inThreeHours);
+    // Populate Return Date strictly with Date X or Date X+1
+    function updateReturnDates() {
+      if (!pickupDateInput.value) return;
+      const baseDate = new Date(pickupDateInput.value);
+      const nextDate = new Date(baseDate);
+      nextDate.setDate(baseDate.getDate() + 1);
+
+      const baseStr = baseDate.toISOString().split('T')[0];
+      const nextStr = nextDate.toISOString().split('T')[0];
+
+      const currentReturnVal = returnDateSelect.value;
+      returnDateSelect.innerHTML = "";
+
+      const pickupIdx = parseInt(pickupTimeSelect.value) || 0;
+      const pickupSlot = ALL_SLOTS[pickupIdx];
+
+      // If pickup is already after midnight, only Date X+1 is valid
+      if (pickupSlot.dayOffset === 0) {
+        const opt1 = document.createElement('option');
+        opt1.value = baseStr;
+        opt1.innerText = `Same Night (${baseDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`;
+        returnDateSelect.appendChild(opt1);
+      }
+
+      const opt2 = document.createElement('option');
+      opt2.value = nextStr;
+      opt2.innerText = `Next Morning (${nextDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`;
+      returnDateSelect.appendChild(opt2);
+
+      if (currentReturnVal === nextStr || pickupSlot.dayOffset === 1 || pickupIdx >= 6) {
+        returnDateSelect.value = nextStr;
+      } else {
+        returnDateSelect.value = baseStr;
+      }
+
+      updateReturnTimes();
+    }
+
+    // Populate Return Times up to 6:00 AM next morning with 10-minute minimum turnaround
+    function updateReturnTimes() {
+      const pickupIdx = parseInt(pickupTimeSelect.value) || 0;
+      const pickupSlot = ALL_SLOTS[pickupIdx];
+      const baseDateStr = pickupDateInput.value;
+      const isNextDay = returnDateSelect.value !== baseDateStr;
+
+      returnTimeSelect.innerHTML = "";
+
+      ALL_SLOTS.forEach((slot, index) => {
+        const isValidTime = slot.offsetMinutes >= (pickupSlot.offsetMinutes + 30); // minimum 30 min booking
+
+        if (!isNextDay && slot.dayOffset === 0 && isValidTime) {
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.innerText = slot.label;
+          returnTimeSelect.appendChild(opt);
+        }
+        
+        if (isNextDay && slot.dayOffset === 1 && isValidTime) {
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.innerText = slot.label;
+          returnTimeSelect.appendChild(opt);
+        }
+      });
+
+      // Fallback if same night has no remaining slots
+      if (returnTimeSelect.options.length === 0 && !isNextDay) {
+        returnDateSelect.value = returnDateSelect.options[returnDateSelect.options.length - 1].value;
+        updateReturnTimes();
+        return;
+      }
+
+      calculate();
+    }
 
     function calculate() {
-      const start = new Date(pickupInput.value);
-      const end = new Date(returnInput.value);
+      const pickupIdx = parseInt(pickupTimeSelect.value);
+      const returnIdx = parseInt(returnTimeSelect.value);
 
-      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+      if (isNaN(pickupIdx) || isNaN(returnIdx)) {
+        durationDisplay.innerText = "⚠️ Please select a valid pickup & return time.";
+        durationDisplay.className = "text-xs font-medium text-red-600 bg-red-50 border border-red-100 p-2.5 rounded-lg text-center";
+        return null;
+      }
+
+      const pickupSlot = ALL_SLOTS[pickupIdx];
+      const returnSlot = ALL_SLOTS[returnIdx];
+
+      const totalMinutes = returnSlot.offsetMinutes - pickupSlot.offsetMinutes;
+      if (totalMinutes <= 0) {
         durationDisplay.innerText = "⚠️ Return time must be after pickup time.";
         durationDisplay.className = "text-xs font-medium text-red-600 bg-red-50 border border-red-100 p-2.5 rounded-lg text-center";
         return null;
       }
 
-      const diffMs = end - start;
-      const totalMinutes = Math.floor(diffMs / (1000 * 60));
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
 
+      // Billing: First 3 hours base, +₹10/hr after
       let extraBilledHours = 0;
-      if (totalMinutes > 180) {
+      if (totalMinutes > 180) { // More than 3 hours
         const extraMinutes = totalMinutes - 180;
         extraBilledHours = Math.ceil(extraMinutes / 60);
       }
 
-      durationDisplay.innerText = `⏱️ Duration: ${hours}h ${minutes}m (Billed: 3h Base + ${extraBilledHours}h Extra)`;
+      durationDisplay.innerText = `⏱️ Duration: ${hours}h ${minutes}m (Billed: 3h Base + ${extraBilledHours}h Extra • +10m Cleaning Buffer)`;
       durationDisplay.className = "text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 p-2.5 rounded-lg text-center";
 
+      // 1. Projector Total
       const projectorTotal = BASE_PROJECTOR_PRICE_3HRS + (extraBilledHours * PROJECTOR_HOURLY_RATE);
       document.getElementById('projPrice').innerText = `₹${projectorTotal}`;
 
+      // 2. Speaker Total
       let speakerTotal = 0;
       const speakerPreview = BASE_SPEAKER_PRICE_3HRS + (extraBilledHours * SPEAKER_HOURLY_RATE);
       if (speakerCheck.checked) {
@@ -209,6 +349,7 @@
         document.getElementById('speakerPriceLabel').innerText = `₹${speakerPreview}`;
       }
 
+      // 3. Fixed Add-ons
       const netflixTotal = netflixCheck.checked ? NETFLIX_PRICE : 0;
       document.getElementById('netflixRow').classList.toggle('hidden', !netflixCheck.checked);
 
@@ -218,24 +359,39 @@
       const grandTotal = projectorTotal + speakerTotal + netflixTotal + hdmiTotal;
       document.getElementById('grandTotal').innerText = `₹${grandTotal}`;
 
+      // Build strings
+      const baseDate = new Date(pickupDateInput.value);
+      
+      const pickupDateObj = new Date(baseDate);
+      pickupDateObj.setDate(baseDate.getDate() + pickupSlot.dayOffset);
+      const pickupFullStr = `${pickupDateObj.toLocaleDateString('en-GB')} ${pickupSlot.label}`;
+
+      const returnDateObj = new Date(baseDate);
+      returnDateObj.setDate(baseDate.getDate() + returnSlot.dayOffset);
+      const returnFullStr = `${returnDateObj.toLocaleDateString('en-GB')} ${returnSlot.label}`;
+
       return {
-        startStr: pickupInput.value,
-        endStr: returnInput.value,
-        formattedDuration: `${hours}h ${minutes}m`,
-        extraBilledHours,
+        pickupFullStr,
+        returnFullStr,
+        formattedDuration: `${hours}h ${minutes}m (+10m Buffer)`,
         grandTotal,
         speakerTotal
       };
     }
 
-    pickupInput.addEventListener('input', calculate);
-    returnInput.addEventListener('input', calculate);
+    // Init flow
+    populatePickupTimes();
+    updateReturnDates();
+
+    pickupDateInput.addEventListener('change', updateReturnDates);
+    pickupTimeSelect.addEventListener('change', updateReturnDates);
+    returnDateSelect.addEventListener('change', updateReturnTimes);
+    returnTimeSelect.addEventListener('change', calculate);
     speakerCheck.addEventListener('change', calculate);
     netflixCheck.addEventListener('change', calculate);
     hdmiCheck.addEventListener('change', calculate);
 
-    calculate();
-
+    // Form Submit
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const calc = calculate();
@@ -250,27 +406,26 @@
       if (netflixCheck.checked) addons.push("Netflix (₹10)");
       if (hdmiCheck.checked) addons.push("HDMI (₹10)");
 
-      const payload = {
-        name: document.getElementById('name').value,
-        phone: document.getElementById('phone').value,
-        userBlock: document.getElementById('userBlock').value,
-        userRoom: document.getElementById('userRoom').value,
-        pickupLocation: document.getElementById('pickupLocation').value,
-        pickupDateTime: calc.startStr,
-        returnDateTime: calc.endStr,
-        duration: calc.formattedDuration,
-        addons: addons.length ? addons.join(", ") : "None",
-        totalPrice: calc.grandTotal
-      };
+      const formData = new URLSearchParams();
+      formData.append("name", document.getElementById('name').value);
+      formData.append("phone", document.getElementById('phone').value);
+      formData.append("userBlock", document.getElementById('userBlock').value);
+      formData.append("userRoom", document.getElementById('userRoom').value);
+      formData.append("pickupLocation", document.getElementById('pickupLocation').value);
+      formData.append("pickupDateTime", calc.pickupFullStr);
+      formData.append("returnDateTime", calc.returnFullStr);
+      formData.append("duration", calc.formattedDuration);
+      formData.append("addons", addons.length ? addons.join(", ") : "None");
+      formData.append("totalPrice", calc.grandTotal);
 
       try {
         await fetch(SCRIPT_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: formData.toString()
         });
-        alert(`Booking Confirmed for ${payload.name}!\nDuration: ${payload.duration}\nTotal: ₹${payload.totalPrice}\nPickup: ${payload.pickupLocation}`);
+        alert(`🎬 Booking Confirmed for ${document.getElementById('name').value}!\n\nPickup: ${calc.pickupFullStr}\nReturn: ${calc.returnFullStr}\nTotal Amount: ₹${calc.grandTotal}\nPickup Location: ${document.getElementById('pickupLocation').value}`);
         location.reload();
       } catch (err) {
         alert("There was an issue logging your booking. Please try again.");
