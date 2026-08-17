@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rent 1080p Cinema Projector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+  <div class="max-w-lg w-full bg-white rounded-2xl p-6 shadow-md border border-slate-200">
+    <h1 class="text-2xl font-bold text-slate-800">Rent Home Cinema Projector</h1>
+    <p class="text-sm text-slate-500 mb-6">Base Price: ₹1,200 per slot</p>
+
+    <form id="rentalForm" class="space-y-4">
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500">Your Name</label>
+        <input type="text" id="name" required class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Alex Smith">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500">Phone / WhatsApp</label>
+        <input type="tel" id="phone" required class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="+91 98765 43210">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-500">Rental Date</label>
+          <input type="date" id="date" required class="w-full border rounded-lg p-2.5 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-500">Time Slot</label>
+          <select id="slot" class="w-full border rounded-lg p-2.5 text-sm mt-1 bg-white">
+            <option>Evening (5 PM - 11 PM)</option>
+            <option>Overnight (6 PM - 10 AM)</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500 block mb-2">Optional Add-ons</label>
+        <div class="space-y-2">
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" value="Speakers" data-price="400" class="addon-check w-4 h-4">
+              <span class="text-sm font-medium">Bluetooth Party Speakers</span>
+            </div>
+            <span class="text-sm text-slate-600 font-semibold">+₹400</span>
+          </label>
+
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" value="HDMI" data-price="100" class="addon-check w-4 h-4">
+              <span class="text-sm font-medium">10-Meter 4K HDMI Cable</span>
+            </div>
+            <span class="text-sm text-slate-600 font-semibold">+₹100</span>
+          </label>
+
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" value="Netflix" data-price="250" class="addon-check w-4 h-4">
+              <span class="text-sm font-medium">FireTV Stick (Netflix Loaded)</span>
+            </div>
+            <span class="text-sm text-slate-600 font-semibold">+₹250</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="p-4 bg-slate-50 rounded-xl space-y-1 text-sm border">
+        <div class="flex justify-between"><span>Base Rent</span><span>₹1,200</span></div>
+        <div class="flex justify-between"><span>Refundable Deposit</span><span>₹2,000</span></div>
+        <hr class="my-2">
+        <div class="flex justify-between font-bold text-slate-900 text-base">
+          <span>Grand Total</span>
+          <span id="grandTotal">₹3,200</span>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-slate-900 text-white py-3 rounded-xl font-medium hover:bg-slate-800 transition">
+        Reserve Projector
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const BASE_PRICE = 1200;
+    const DEPOSIT = 2000;
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaOOtPhPhdHd5Fx70m0Y4pF-K6ue6ZLSSJtRpoEeTGQXsLus7X05j2LtSTTXs1YzGHFQ/exec";
+
+    const checkboxes = document.querySelectorAll('.addon-check');
+    const totalEl = document.getElementById('grandTotal');
+
+    function calculateTotal() {
+      let addonSum = 0;
+      checkboxes.forEach(cb => {
+        if (cb.checked) addonSum += Number(cb.dataset.price);
+      });
+      totalEl.textContent = `₹${BASE_PRICE + DEPOSIT + addonSum}`;
+      return BASE_PRICE + DEPOSIT + addonSum;
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', calculateTotal));
+
+    document.getElementById('rentalForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.innerText = "Processing...";
+      btn.disabled = true;
+
+      const selectedAddons = [];
+      checkboxes.forEach(cb => { if(cb.checked) selectedAddons.push(cb.value); });
+
+      const payload = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        date: document.getElementById('date').value,
+        slot: document.getElementById('slot').value,
+        addons: selectedAddons,
+        totalPrice: calculateTotal()
+      };
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        alert("Booking submitted! We will contact you on WhatsApp to confirm pickup.");
+        location.reload();
+      } catch (err) {
+        alert("Error booking slot. Please try again.");
+      }
+    });
+  </script>
+</body>
+</html>
