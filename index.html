@@ -11,7 +11,17 @@
   <div class="max-w-lg w-full bg-white rounded-2xl p-6 shadow-md border border-slate-200">
     <div class="mb-5">
       <h1 class="text-2xl font-bold text-slate-900">📽️ Rent Cinema Projector</h1>
-      <p class="text-xs text-slate-500 mt-1">Night slots (6:00 PM – 6:00 AM) • 10-min buffer between slots</p>
+      <p class="text-xs text-slate-500 mt-1">Available 6:00 PM – 6:00 AM • ₹50 up to 3 hrs • +₹10/hr after</p>
+    </div>
+
+    <!-- Live Booked Slots Display Box -->
+    <div class="mb-5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+      <h2 class="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-2">
+        <span>📅 Currently Booked Slots</span>
+      </h2>
+      <div id="bookedSlotsContainer" class="space-y-1.5 text-xs text-slate-600">
+        <p class="text-slate-400 italic">No bookings recorded yet. All slots open!</p>
+      </div>
     </div>
 
     <form id="rentalForm" class="space-y-4">
@@ -70,8 +80,8 @@
       </div>
 
       <!-- Duration Summary Alert -->
-      <div id="durationDisplay" class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 p-2.5 rounded-lg text-center">
-        Loading live slot availability...
+      <div id="durationDisplay" class="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 p-2.5 rounded-lg text-center">
+        Calculating slot...
       </div>
 
       <!-- Add-ons -->
@@ -151,9 +161,8 @@
     const SPEAKER_HOURLY_RATE = 10;
     const NETFLIX_PRICE = 10;
     const HDMI_PRICE = 10;
-    const BUFFER_MS = 10 * 60 * 1000;
 
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEH6ig6v1SYPtdt3KD4oGN-vnIx0ts68V8ZwgfIX2VN1CB_9UMXoNX-bjJAvnFALy6/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaOOtPhPhdHd5Fx70m0Y4pF-K6ue6ZLSSJtRpoEeTGQXsLus7X05j2LtSTTXs1YzGHFQ/exec";
 
     let existingBookings = [];
 
@@ -161,37 +170,38 @@
     const pickupTimeSelect = document.getElementById('pickupTime');
     const returnTimeSelect = document.getElementById('returnTime');
     const durationDisplay = document.getElementById('durationDisplay');
+    const bookedSlotsContainer = document.getElementById('bookedSlotsContainer');
     const submitBtn = document.getElementById('submitBtn');
     const speakerCheck = document.getElementById('speakerAddon');
     const netflixCheck = document.getElementById('netflixAddon');
     const hdmiCheck = document.getElementById('hdmiAddon');
 
     const SLOTS = [
-      { label: "06:00 PM (Same Night)", offsetMins: 0, dayOffset: 0, h: 18, m: 0 },
-      { label: "06:30 PM (Same Night)", offsetMins: 30, dayOffset: 0, h: 18, m: 30 },
-      { label: "07:00 PM (Same Night)", offsetMins: 60, dayOffset: 0, h: 19, m: 0 },
-      { label: "07:30 PM (Same Night)", offsetMins: 90, dayOffset: 0, h: 19, m: 30 },
-      { label: "08:00 PM (Same Night)", offsetMins: 120, dayOffset: 0, h: 20, m: 0 },
-      { label: "08:30 PM (Same Night)", offsetMins: 150, dayOffset: 0, h: 20, m: 30 },
-      { label: "09:00 PM (Same Night)", offsetMins: 180, dayOffset: 0, h: 21, m: 0 },
-      { label: "09:30 PM (Same Night)", offsetMins: 210, dayOffset: 0, h: 21, m: 30 },
-      { label: "10:00 PM (Same Night)", offsetMins: 240, dayOffset: 0, h: 22, m: 0 },
-      { label: "10:30 PM (Same Night)", offsetMins: 270, dayOffset: 0, h: 22, m: 30 },
-      { label: "11:00 PM (Same Night)", offsetMins: 300, dayOffset: 0, h: 23, m: 0 },
-      { label: "11:30 PM (Same Night)", offsetMins: 330, dayOffset: 0, h: 23, m: 30 },
-      { label: "12:00 AM (Midnight Next Day)", offsetMins: 360, dayOffset: 1, h: 0, m: 0 },
-      { label: "12:30 AM (Next Day)", offsetMins: 390, dayOffset: 1, h: 0, m: 30 },
-      { label: "01:00 AM (Next Day)", offsetMins: 420, dayOffset: 1, h: 1, m: 0 },
-      { label: "01:30 AM (Next Day)", offsetMins: 450, dayOffset: 1, h: 1, m: 30 },
-      { label: "02:00 AM (Next Day)", offsetMins: 480, dayOffset: 1, h: 2, m: 0 },
-      { label: "02:30 AM (Next Day)", offsetMins: 510, dayOffset: 1, h: 2, m: 30 },
-      { label: "03:00 AM (Next Day)", offsetMins: 540, dayOffset: 1, h: 3, m: 0 },
-      { label: "03:30 AM (Next Day)", offsetMins: 570, dayOffset: 1, h: 3, m: 30 },
-      { label: "04:00 AM (Next Day)", offsetMins: 600, dayOffset: 1, h: 4, m: 0 },
-      { label: "04:30 AM (Next Day)", offsetMins: 630, dayOffset: 1, h: 4, m: 30 },
-      { label: "05:00 AM (Next Day)", offsetMins: 660, dayOffset: 1, h: 5, m: 0 },
-      { label: "05:30 AM (Next Day)", offsetMins: 690, dayOffset: 1, h: 5, m: 30 },
-      { label: "06:00 AM (Next Day)", offsetMins: 720, dayOffset: 1, h: 6, m: 0 }
+      { label: "06:00 PM", offsetMins: 0, dayOffset: 0, h: 18, m: 0 },
+      { label: "06:30 PM", offsetMins: 30, dayOffset: 0, h: 18, m: 30 },
+      { label: "07:00 PM", offsetMins: 60, dayOffset: 0, h: 19, m: 0 },
+      { label: "07:30 PM", offsetMins: 90, dayOffset: 0, h: 19, m: 30 },
+      { label: "08:00 PM", offsetMins: 120, dayOffset: 0, h: 20, m: 0 },
+      { label: "08:30 PM", offsetMins: 150, dayOffset: 0, h: 20, m: 30 },
+      { label: "09:00 PM", offsetMins: 180, dayOffset: 0, h: 21, m: 0 },
+      { label: "09:30 PM", offsetMins: 210, dayOffset: 0, h: 21, m: 30 },
+      { label: "10:00 PM", offsetMins: 240, dayOffset: 0, h: 22, m: 0 },
+      { label: "10:30 PM", offsetMins: 270, dayOffset: 0, h: 22, m: 30 },
+      { label: "11:00 PM", offsetMins: 300, dayOffset: 0, h: 23, m: 0 },
+      { label: "11:30 PM", offsetMins: 330, dayOffset: 0, h: 23, m: 30 },
+      { label: "12:00 AM (Midnight)", offsetMins: 360, dayOffset: 1, h: 0, m: 0 },
+      { label: "12:30 AM", offsetMins: 390, dayOffset: 1, h: 0, m: 30 },
+      { label: "01:00 AM", offsetMins: 420, dayOffset: 1, h: 1, m: 0 },
+      { label: "01:30 AM", offsetMins: 450, dayOffset: 1, h: 1, m: 30 },
+      { label: "02:00 AM", offsetMins: 480, dayOffset: 1, h: 2, m: 0 },
+      { label: "02:30 AM", offsetMins: 510, dayOffset: 1, h: 2, m: 30 },
+      { label: "03:00 AM", offsetMins: 540, dayOffset: 1, h: 3, m: 0 },
+      { label: "03:30 AM", offsetMins: 570, dayOffset: 1, h: 3, m: 30 },
+      { label: "04:00 AM", offsetMins: 600, dayOffset: 1, h: 4, m: 0 },
+      { label: "04:30 AM", offsetMins: 630, dayOffset: 1, h: 4, m: 30 },
+      { label: "05:00 AM", offsetMins: 660, dayOffset: 1, h: 5, m: 0 },
+      { label: "05:30 AM", offsetMins: 690, dayOffset: 1, h: 5, m: 30 },
+      { label: "06:00 AM", offsetMins: 720, dayOffset: 1, h: 6, m: 0 }
     ];
 
     const today = new Date();
@@ -206,78 +216,76 @@
       return d.getTime();
     }
 
+    // Direct overlap check (Zero buffer)
     function isTimeOverlapping(startMs, endMs) {
+      if (!existingBookings || existingBookings.length === 0) return false;
       for (let b of existingBookings) {
-        if (startMs < (b.end + BUFFER_MS) && (endMs + BUFFER_MS) > b.start) {
+        if (startMs < b.end && endMs > b.start) {
           return true;
         }
       }
       return false;
     }
 
+    // Render the anonymous booked slots list
+    function renderBookedSlotsList() {
+      if (!existingBookings || existingBookings.length === 0) {
+        bookedSlotsContainer.innerHTML = `<p class="text-slate-400 italic">No bookings recorded yet. All slots open!</p>`;
+        return;
+      }
+
+      bookedSlotsContainer.innerHTML = "";
+      existingBookings.forEach(b => {
+        const item = document.createElement("div");
+        item.className = "flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-red-100 text-red-700 font-medium";
+        item.innerHTML = `<span>🔴 Booked:</span> <span>${b.display}</span>`;
+        bookedSlotsContainer.appendChild(item);
+      });
+    }
+
+    // JSONP callback
     window.handleBookingsResponse = function(data) {
-      existingBookings = data || [];
-      populatePickupTimes();
+      if (Array.isArray(data)) {
+        existingBookings = data;
+        renderBookedSlotsList();
+        calculate();
+      }
     };
 
-    function loadBookingsJSONP() {
+    function fetchBookings() {
       const oldScript = document.getElementById('jsonp-script');
       if (oldScript) oldScript.remove();
 
       const script = document.createElement('script');
       script.id = 'jsonp-script';
-      script.src = `${SCRIPT_URL}?callback=handleBookingsResponse&t=${new Date().getTime()}`;
+      script.src = `${SCRIPT_URL}?callback=handleBookingsResponse&_t=${Date.now()}`;
       document.body.appendChild(script);
     }
 
     function populatePickupTimes() {
       pickupTimeSelect.innerHTML = "";
-
       SLOTS.filter(s => s.offsetMins <= 510).forEach((slot, idx) => {
-        const startMs = getEpoch(idx);
-        const isBlocked = isTimeOverlapping(startMs, startMs + 30 * 60 * 1000);
-
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.innerText = isBlocked ? `❌ ${slot.label} (Booked)` : slot.label;
-        opt.disabled = isBlocked;
+        opt.innerText = slot.label;
         pickupTimeSelect.appendChild(opt);
       });
-
-      const firstEnabled = Array.from(pickupTimeSelect.options).find(o => !o.disabled);
-      if (firstEnabled) {
-        pickupTimeSelect.value = firstEnabled.value;
-      }
-
       populateReturnTimes();
     }
 
     function populateReturnTimes() {
       const pickupIdx = parseInt(pickupTimeSelect.value) || 0;
-      const pickupStartMs = getEpoch(pickupIdx);
       returnTimeSelect.innerHTML = "";
 
       for (let i = pickupIdx + 1; i < SLOTS.length; i++) {
-        const returnEndMs = getEpoch(i);
-        const hasOverlap = isTimeOverlapping(pickupStartMs, returnEndMs);
-
         const opt = document.createElement('option');
         opt.value = i;
-        opt.innerText = hasOverlap ? `❌ ${SLOTS[i].label} (Collides with booking)` : SLOTS[i].label;
-        opt.disabled = hasOverlap;
+        opt.innerText = SLOTS[i].label;
         returnTimeSelect.appendChild(opt);
       }
 
       const defaultReturn = Math.min(pickupIdx + 6, SLOTS.length - 1);
-      const targetOpt = Array.from(returnTimeSelect.options).find(o => parseInt(o.value) === defaultReturn && !o.disabled);
-      
-      if (targetOpt) {
-        returnTimeSelect.value = targetOpt.value;
-      } else {
-        const firstAvailable = Array.from(returnTimeSelect.options).find(o => !o.disabled);
-        if (firstAvailable) returnTimeSelect.value = firstAvailable.value;
-      }
-
+      returnTimeSelect.value = defaultReturn;
       calculate();
     }
 
@@ -285,19 +293,14 @@
       const pickupIdx = parseInt(pickupTimeSelect.value);
       const returnIdx = parseInt(returnTimeSelect.value);
 
-      if (isNaN(pickupIdx) || isNaN(returnIdx)) {
-        durationDisplay.innerText = "❌ All slots booked for this time. Pick another date/time.";
-        durationDisplay.className = "text-xs font-bold text-red-700 bg-red-100 border border-red-200 p-2.5 rounded-lg text-center";
-        submitBtn.disabled = true;
-        submitBtn.className = "w-full bg-gray-400 text-white py-3 rounded-xl font-medium cursor-not-allowed";
-        return null;
-      }
+      if (isNaN(pickupIdx) || isNaN(returnIdx)) return null;
 
       const startMs = getEpoch(pickupIdx);
       const endMs = getEpoch(returnIdx);
 
+      // Overlap check
       if (isTimeOverlapping(startMs, endMs)) {
-        durationDisplay.innerText = "❌ Selected range overlaps an existing booking + 10m buffer!";
+        durationDisplay.innerText = "❌ Selected range overlaps an existing booking! Choose another time.";
         durationDisplay.className = "text-xs font-bold text-red-700 bg-red-100 border border-red-200 p-2.5 rounded-lg text-center";
         submitBtn.disabled = true;
         submitBtn.className = "w-full bg-gray-400 text-white py-3 rounded-xl font-medium cursor-not-allowed";
@@ -353,17 +356,17 @@
         endMs,
         pickupFullStr: `${pDate.toLocaleDateString('en-GB')} ${pickupSlot.label}`,
         returnFullStr: `${rDate.toLocaleDateString('en-GB')} ${returnSlot.label}`,
-        formattedDuration: `${hours}h ${minutes}m (+10m Buffer)`,
+        formattedDuration: `${hours}h ${minutes}m`,
         grandTotal,
         speakerTotal
       };
     }
 
-    loadBookingsJSONP();
+    // Initialize UI instantly
+    populatePickupTimes();
+    fetchBookings();
 
-    rentalDateInput.addEventListener('change', () => {
-      populatePickupTimes();
-    });
+    rentalDateInput.addEventListener('change', calculate);
     pickupTimeSelect.addEventListener('change', populateReturnTimes);
     returnTimeSelect.addEventListener('change', calculate);
     speakerCheck.addEventListener('change', calculate);
@@ -407,8 +410,8 @@
         const resText = await response.text();
 
         if (resText.includes("COLLISION")) {
-          alert("⚠️ Booking Collision: This slot or its 10-min cleaning buffer was just taken! Refreshing...");
-          loadBookingsJSONP();
+          alert("⚠️ Booking Collision: Someone just booked this time slot! Refreshing...");
+          fetchBookings();
         } else {
           alert(`🎬 Booking Confirmed for ${document.getElementById('name').value}!\n\nPickup: ${calc.pickupFullStr}\nReturn: ${calc.returnFullStr}\nTotal: ₹${calc.grandTotal}`);
           location.reload();
