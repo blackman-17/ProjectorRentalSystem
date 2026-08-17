@@ -87,7 +87,298 @@
     const BASE_PRICE = 1200;
     const DEPOSIT = 2000;
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaOOtPhPhdHd5Fx70m0Y4pF-K6ue6ZLSSJtRpoEeTGQXsLus7X05j2LtSTTXs1YzGHFQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaOOtPhPhdHd5Fx70m0Y4pF-K6ue6ZLSSJtRpoEeTGQXsLus7X05j2LtSTTXs1YzGHFQ/exec<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostel Projector Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
+
+  <div class="max-w-lg w-full bg-white rounded-2xl p-6 shadow-md border border-slate-200">
+    <div class="mb-5">
+      <h1 class="text-2xl font-bold text-slate-800">📽️ Rent Cinema Projector</h1>
+      <p class="text-xs text-slate-500 mt-1">₹50 flat for up to 3 hrs • +₹10/hr after • No security deposit</p>
+    </div>
+
+    <form id="rentalForm" class="space-y-4">
+      
+      <!-- Personal & Room Details -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Your Name</label>
+          <input type="text" id="name" required class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Rahul Sharma">
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Phone / WhatsApp</label>
+          <input type="tel" id="phone" required class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="9876543210">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Your Block</label>
+          <input type="text" id="userBlock" required class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Block 9">
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Your Room No.</label>
+          <input type="text" id="userRoom" required class="w-full border rounded-lg p-2.5 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 302">
+        </div>
+      </div>
+
+      <!-- Pickup Location -->
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-600">Pickup & Return Location</label>
+        <select id="pickupLocation" class="w-full border rounded-lg p-2.5 text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+          <option value="Block 9 - Room 467">Block 9 — Room 467</option>
+          <option value="Block 9 - Room 149">Block 9 — Room 149</option>
+        </select>
+      </div>
+
+      <!-- Custom Pickup & Return Timing -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Pickup Date & Time</label>
+          <input type="datetime-local" id="pickupDateTime" required class="w-full border rounded-lg p-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase text-slate-600">Return Date & Time</label>
+          <input type="datetime-local" id="returnDateTime" required class="w-full border rounded-lg p-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+      </div>
+
+      <!-- Duration Summary Alert -->
+      <div id="durationDisplay" class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 p-2.5 rounded-lg text-center">
+        Select pickup and return time to view duration
+      </div>
+
+      <!-- Add-ons -->
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-600 block mb-2">Select Add-ons</label>
+        <div class="space-y-2">
+          
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="speakerAddon" class="w-4 h-4 text-blue-600 rounded">
+              <div>
+                <p class="text-sm font-medium text-slate-800">External Speakers</p>
+                <p class="text-xs text-slate-500">₹25 up to 3 hrs (+₹10/hr extra)</p>
+              </div>
+            </div>
+            <span id="speakerPriceLabel" class="text-sm font-semibold text-slate-700">₹25</span>
+          </label>
+
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="netflixAddon" class="w-4 h-4 text-blue-600 rounded">
+              <div>
+                <p class="text-sm font-medium text-slate-800">Netflix Access (In-built)</p>
+                <p class="text-xs text-slate-500">Active profile login on projector</p>
+              </div>
+            </div>
+            <span class="text-sm font-semibold text-slate-700">+₹10</span>
+          </label>
+
+          <label class="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="hdmiAddon" class="w-4 h-4 text-blue-600 rounded">
+              <div>
+                <p class="text-sm font-medium text-slate-800">HDMI Cable</p>
+                <p class="text-xs text-slate-500">High speed laptop connection</p>
+              </div>
+            </div>
+            <span class="text-sm font-semibold text-slate-700">+₹10</span>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="p-4 bg-slate-50 rounded-xl space-y-1.5 text-sm border border-slate-200">
+        <div class="flex justify-between text-slate-600">
+          <span>Projector Rent</span>
+          <span id="projPrice">₹50</span>
+        </div>
+        <div id="speakerRow" class="flex justify-between text-slate-600 hidden">
+          <span>Speakers Rent</span>
+          <span id="speakerSubtotal">₹25</span>
+        </div>
+        <div id="netflixRow" class="flex justify-between text-slate-600 hidden">
+          <span>Netflix Profile</span>
+          <span>₹10</span>
+        </div>
+        <div id="hdmiRow" class="flex justify-between text-slate-600 hidden">
+          <span>HDMI Cable</span>
+          <span>₹10</span>
+        </div>
+        <hr class="my-2 border-slate-200">
+        <div class="flex justify-between font-bold text-slate-900 text-base">
+          <span>Total Amount</span>
+          <span id="grandTotal">₹50</span>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition">
+        Confirm Booking
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const BASE_PROJECTOR_PRICE_3HRS = 50;
+    const PROJECTOR_HOURLY_RATE = 10;
+    
+    const BASE_SPEAKER_PRICE_3HRS = 25;
+    const SPEAKER_HOURLY_RATE = 10;
+
+    const NETFLIX_PRICE = 10;
+    const HDMI_PRICE = 10;
+
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+    const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+
+    const pickupInput = document.getElementById('pickupDateTime');
+    const returnInput = document.getElementById('returnDateTime');
+    const durationDisplay = document.getElementById('durationDisplay');
+    const speakerCheck = document.getElementById('speakerAddon');
+    const netflixCheck = document.getElementById('netflixAddon');
+    const hdmiCheck = document.getElementById('hdmiAddon');
+
+    // Default dates (Today starting now + 3 hours default)
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    const inThreeHours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+
+    function formatForInput(date) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    pickupInput.value = formatForInput(now);
+    returnInput.value = formatForInput(inThreeHours);
+
+    function calculate() {
+      const start = new Date(pickupInput.value);
+      const end = new Date(returnInput.value);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        durationDisplay.innerText = "⚠️ Return time must be after pickup time.";
+        durationDisplay.className = "text-xs font-medium text-red-600 bg-red-50 border border-red-100 p-2.5 rounded-lg text-center";
+        return null;
+      }
+
+      // Calculate exact duration
+      const diffMs = end - start;
+      const totalMinutes = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      // Billing calculation logic
+      let extraBilledHours = 0;
+      if (totalMinutes > 180) { // More than 3 hours (180 mins)
+        const extraMinutes = totalMinutes - 180;
+        // Even 1 extra minute rounds up to the next billable hour
+        extraBilledHours = Math.ceil(extraMinutes / 60);
+      }
+
+      durationDisplay.innerText = `⏱️ Duration: ${hours}h ${minutes}m (Billed: 3h Base + ${extraBilledHours}h Extra)`;
+      durationDisplay.className = "text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 p-2.5 rounded-lg text-center";
+
+      // 1. Projector Total
+      const projectorTotal = BASE_PROJECTOR_PRICE_3HRS + (extraBilledHours * PROJECTOR_HOURLY_RATE);
+      document.getElementById('projPrice').innerText = `₹${projectorTotal}`;
+
+      // 2. Speaker Total
+      let speakerTotal = 0;
+      const speakerPreview = BASE_SPEAKER_PRICE_3HRS + (extraBilledHours * SPEAKER_HOURLY_RATE);
+      if (speakerCheck.checked) {
+        speakerTotal = speakerPreview;
+        document.getElementById('speakerRow').classList.remove('hidden');
+        document.getElementById('speakerSubtotal').innerText = `₹${speakerTotal}`;
+        document.getElementById('speakerPriceLabel').innerText = `+₹${speakerTotal}`;
+      } else {
+        document.getElementById('speakerRow').classList.add('hidden');
+        document.getElementById('speakerPriceLabel').innerText = `₹${speakerPreview}`;
+      }
+
+      // 3. Flat add-ons
+      const netflixTotal = netflixCheck.checked ? NETFLIX_PRICE : 0;
+      document.getElementById('netflixRow').classList.toggle('hidden', !netflixCheck.checked);
+
+      const hdmiTotal = hdmiCheck.checked ? HDMI_PRICE : 0;
+      document.getElementById('hdmiRow').classList.toggle('hidden', !hdmiCheck.checked);
+
+      // Grand Total
+      const grandTotal = projectorTotal + speakerTotal + netflixTotal + hdmiTotal;
+      document.getElementById('grandTotal').innerText = `₹${grandTotal}`;
+
+      return {
+        startStr: pickupInput.value,
+        endStr: returnInput.value,
+        formattedDuration: `${hours}h ${minutes}m`,
+        extraBilledHours,
+        grandTotal,
+        speakerTotal
+      };
+    }
+
+    // Event listeners
+    pickupInput.addEventListener('input', calculate);
+    returnInput.addEventListener('input', calculate);
+    speakerCheck.addEventListener('change', calculate);
+    netflixCheck.addEventListener('change', calculate);
+    hdmiCheck.addEventListener('change', calculate);
+
+    calculate();
+
+    // Form submit
+    document.getElementById('rentalForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const calc = calculate();
+      if (!calc) return;
+
+      const btn = document.getElementById('submitBtn');
+      btn.innerText = "Submitting Booking...";
+      btn.disabled = true;
+
+      const addons = [];
+      if (speakerCheck.checked) addons.push(`Speakers (₹${calc.speakerTotal})`);
+      if (netflixCheck.checked) addons.push("Netflix (₹10)");
+      if (hdmiCheck.checked) addons.push("HDMI (₹10)");
+
+      const payload = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        userBlock: document.getElementById('userBlock').value,
+        userRoom: document.getElementById('userRoom').value,
+        pickupLocation: document.getElementById('pickupLocation').value,
+        pickupDateTime: calc.startStr,
+        returnDateTime: calc.endStr,
+        duration: calc.formattedDuration,
+        addons: addons.length ? addons.join(", ") : "None",
+        totalPrice: calc.grandTotal
+      };
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        alert(`Booking Confirmed for ${payload.name}!\nDuration: ${payload.duration}\nTotal Amount: ₹${payload.totalPrice}\nPickup: ${payload.pickupLocation}`);
+        location.reload();
+      } catch (err) {
+        alert("There was an issue logging your booking. Please try again.");
+        btn.innerText = "Confirm Booking";
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>";
 
     const checkboxes = document.querySelectorAll('.addon-check');
     const totalEl = document.getElementById('grandTotal');
